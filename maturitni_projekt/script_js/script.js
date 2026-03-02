@@ -100,10 +100,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  const reservationForms = document.querySelectorAll('.reservation-form');
+const reservationForms = document.querySelectorAll('.reservation-form');
+  // set minimum allowable date on each form's date input
+  const todayStr = new Date().toISOString().split('T')[0];
   reservationForms.forEach(reservationForm => {
+    const dateInput = reservationForm.querySelector('input[type="date"]');
+    if (dateInput) {
+      dateInput.setAttribute('min', todayStr);
+    }
+
     reservationForm.addEventListener('submit', function (e) {
       e.preventDefault();
+
+      // validate that selected date is not in the past
+      if (dateInput && dateInput.value) {
+        const selected = new Date(dateInput.value);
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        if (selected < now) {
+          alert('Please select a valid date (today or later) for your reservation.');
+          return;
+        }
+      }
+
       alert('Thank you for your reservation! We will confirm your booking soon.');
       reservationForm.reset();
     });
@@ -319,3 +338,4 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
+
