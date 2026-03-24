@@ -14,6 +14,41 @@ function toggleNav() {
   playSound('clickSound');
 }
 
+/* ===== THEME SYSTEM ===== */
+let isDarkTheme = localStorage.getItem('theme') === 'dark';
+
+/**
+ * Toggle light/dark theme
+ * Stores preference in localStorage
+ */
+function toggleTheme(event) {
+  event.preventDefault();
+  isDarkTheme = !isDarkTheme;
+  localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggleBtn');
+  const icon = btn ? btn.querySelector('.icon') : null;
+  if (isDarkTheme) {
+    document.body.classList.add('dark-theme');
+    if (icon) icon.textContent = '☀️';
+  } else {
+    document.body.classList.remove('dark-theme');
+    if (icon) icon.textContent = '🌙';
+  }
+}
+
+// Initialize theme on page load
+window.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('themeToggleBtn');
+  const icon = btn ? btn.querySelector('.icon') : null;
+  if (isDarkTheme) {
+    document.body.classList.add('dark-theme');
+    if (icon) icon.textContent = '☀️';
+  } else {
+    document.body.classList.remove('dark-theme');
+    if (icon) icon.textContent = '🌙';
+  }
+});
+
 /* ===== SOUND EFFECTS SYSTEM ===== */
 let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
 
@@ -26,8 +61,11 @@ function toggleSound(event) {
   soundEnabled = !soundEnabled;
   localStorage.setItem('soundEnabled', soundEnabled);
   const btn = document.getElementById('soundToggleBtn');
+  const icon = btn ? btn.querySelector('.icon') : null;
   btn.classList.toggle('muted');
-  btn.textContent = soundEnabled ? '🔊' : '🔇';
+  if (icon) {
+    icon.textContent = soundEnabled ? '🔊' : '🔇';
+  }
 }
 
 /**
@@ -48,9 +86,10 @@ function playSound(soundId) {
 // Initialize sound button state
 window.addEventListener('load', function() {
   const btn = document.getElementById('soundToggleBtn');
+  const icon = btn ? btn.querySelector('.icon') : null;
   if (!soundEnabled && btn) {
     btn.classList.add('muted');
-    btn.textContent = '🔇';
+    if (icon) icon.textContent = '🔇';
   }
 });
 
@@ -59,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const clickableElements = document.querySelectorAll('a, button, .programme-card, .pricing-card');
   clickableElements.forEach(el => {
     el.addEventListener('click', function(e) {
-      if (!e.target.classList.contains('hamburger') && !e.target.classList.contains('sound-toggle')) {
+      if (!e.target.classList.contains('hamburger') && !e.target.classList.contains('control-btn') && !e.target.closest('.control-btn')) {
         playSound('clickSound');
       }
     });
@@ -336,6 +375,213 @@ document.addEventListener('keydown', function(e) {
       case '4': smoothScrollToSection('contact'); break;
       case '5': smoothScrollToSection('gallery'); break;
     }
+  }
+});
+
+/* ===== IMAGE MODAL SYSTEM ===== */
+
+let currentImageIndex = 0;
+let currentImageArray = [];
+
+/**
+ * Initialize image modal system - creates modal HTML if not present
+ */
+function initializeImageModal() {
+  // Check if modal already exists
+  if (document.getElementById('imageModal')) return;
+  
+  // Create modal HTML structure
+  const modalHTML = `
+    <div id="imageModal" class="image-modal">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeImageModal()">&times;</button>
+        <img id="modalImage" class="modal-image" src="" alt="Image">
+        <div class="modal-controls">
+          <button class="modal-button" onclick="previousImage()" id="prevBtn" title="Previous image (← Arrow)">← Prev</button>
+          <div class="modal-counter" id="imageCounter"></div>
+          <button class="modal-button" onclick="nextImage()" id="nextBtn" title="Next image (→ Arrow)">Next →</button>
+        </div>
+        <div class="modal-hint">Use arrow keys to navigate or Esc to close</div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Add keyboard navigation for modal
+  document.addEventListener('keydown', handleModalKeyboard);
+  
+  // Add touch support for mobile
+  const modal = document.getElementById('imageModal');
+  modal.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, false);
+  
+  modal.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  }, false);
+}
+
+/**
+ * Handle keyboard navigation in modal
+ */
+function handleModalKeyboard(e) {
+  const modal = document.getElementById('imageModal');
+  if (!modal || !modal.classList.contains('active')) return;
+  
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    previousImage();
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    nextImage();
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeImageModal();
+  }
+}
+
+/**
+ * Open image modal with image array
+ * @param {Array} imageArray - Array of image paths
+ * @param {number} startIndex - Starting image index
+ */
+function openImageModal(imageArray, startIndex = 0) {
+  if (!imageArray || imageArray.length === 0) return;
+  
+  currentImageArray = imageArray;
+  currentImageIndex = startIndex;
+  
+  const modal = document.getElementById('imageModal') || 
+                (initializeImageModal(), document.getElementById('imageModal'));
+  
+  modal.classList.add('active');
+  displayImage();
+  playSound('clickSound');
+  document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+/**
+ * Close image modal
+ */
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.classList.remove('active');
+    playSound('clickSound');
+    document.body.style.overflow = 'auto'; // Re-enable scrolling
+  }
+}
+
+/**
+ * Display current image and update controls
+ */
+function displayImage() {
+  if (currentImageArray.length === 0) return;
+  
+  const modalImage = document.getElementById('modalImage');
+  const imageCounter = document.getElementById('imageCounter');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  
+  // Update image
+  modalImage.src = currentImageArray[currentImageIndex];
+  
+  // Update counter
+  imageCounter.textContent = `${currentImageIndex + 1} / ${currentImageArray.length}`;
+  
+  // Update button states
+  prevBtn.disabled = currentImageIndex === 0;
+  nextBtn.disabled = currentImageIndex === currentImageArray.length - 1;
+}
+
+/**
+ * Navigate to next image
+ */
+function nextImage() {
+  if (currentImageIndex < currentImageArray.length - 1) {
+    currentImageIndex++;
+    displayImage();
+    playSound('clickSound');
+  }
+}
+
+/**
+ * Navigate to previous image
+ */
+function previousImage() {
+  if (currentImageIndex > 0) {
+    currentImageIndex--;
+    displayImage();
+    playSound('clickSound');
+  }
+}
+
+/**
+ * Handle swipe gestures for mobile gallery
+ */
+let touchStartX = 0;
+let touchEndX = 0;
+
+function handleSwipe() {
+  const swipeThreshold = 50;
+  const diff = touchStartX - touchEndX;
+  
+  if (Math.abs(diff) > swipeThreshold) {
+    if (diff > 0) {
+      // Swiped left - go to next image
+      nextImage();
+    } else {
+      // Swiped right - go to previous image
+      previousImage();
+    }
+  }
+}
+
+/**
+ * Make images clickable to open modal
+ * Usage: Call this function on programme pages with image arrays
+ */
+function setupImageClickListeners(imageArray) {
+  const sectionImages = document.querySelectorAll('.programme-image, .gallery-item img');
+  
+  sectionImages.forEach(img => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', function() {
+      openImageModal(imageArray, 0);
+    });
+  });
+}
+
+/**
+ * Create image array from folder using naming pattern
+ * @param {string} basePath - Base path to image folder (e.g., '../../images/sparring/')
+ * @param {string} namePattern - Pattern of filenames (e.g., 'sparring')
+ * @param {number} count - Number of images
+ * @returns {Array} Array of image paths
+ */
+function createImageArray(basePath, namePattern, count) {
+  const images = [];
+  // Add main image first
+  images.push(basePath + namePattern + '.jfif');
+  
+  // Add numbered variants
+  for (let i = 1; i <= count; i++) {
+    images.push(basePath + namePattern + ' (' + i + ').jfif');
+  }
+  
+  return images;
+}
+
+// Initialize modal on page load
+document.addEventListener('DOMContentLoaded', initializeImageModal);
+
+// Close modal when clicking outside the content
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('imageModal');
+  if (modal && e.target === modal) {
+    closeImageModal();
   }
 });
 
