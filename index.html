@@ -24,6 +24,24 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       document.title = "LIFT ZONE";
+      
+      // Setup image modal for gallery items in "The Gym" section only
+      const galleryItems = document.querySelectorAll('.gallery-item img');
+      
+      galleryItems.forEach(img => {
+        img.style.cursor = 'pointer';
+        img.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Get all images in the same gallery container
+          const gallery = img.closest('.gallery');
+          const allImages = Array.from(gallery.querySelectorAll('img')).map(i => i.src);
+          const currentIndex = allImages.indexOf(img.src);
+          
+          openImageModal(allImages, currentIndex);
+        });
+      });
     });
   </script>
 
@@ -45,10 +63,15 @@
         <li><a href="#contact">Contact</a></li>
         <li><a href="#gallery">The Gym</a></li>
       </ul>
-      <!-- Audio Control Toggle -->
-      <button id="soundToggleBtn" class="sound-toggle" title="Toggle sound effects" onclick="toggleSound(event)">
-        🔊
-      </button>
+      <!-- Controls Group -->
+      <div class="controls-group">
+        <button id="soundToggleBtn" class="control-btn sound-toggle" title="Toggle sound effects" onclick="toggleSound(event)">
+          <span class="icon">🔊</span>
+        </button>
+        <button id="themeToggleBtn" class="control-btn theme-toggle" title="Toggle dark/light theme" onclick="toggleTheme(event)">
+          <span class="icon">🌙</span>
+        </button>
+      </div>
       <div class="hamburger" onclick="toggleNav()">
         <div class="hamburger-line"></div>
         <div class="hamburger-line"></div>
@@ -499,7 +522,7 @@
           <div class="video-container">
             <h3>Strength Training Fundamentals</h3>
             <video class="featured-video" width="500" height="315" controls>
-              <source src="../media/strength-training.mp4" type="video/mp4">
+              <source src="https://www.youtube.com/watch?v=DTt1SXSO5Is" type="video/mp4">
               Your browser does not support the video tag.
             </video>
             <p>Learn proper form and technique for basic strength training exercises with professional guidance from our head trainer.</p>
@@ -509,7 +532,7 @@
           <div class="video-container">
             <h3>HIIT Cardio Blast</h3>
             <video class="featured-video" width="500" height="315" controls>
-              <source src="../media/hiit-cardio.mp4" type="video/mp4">
+              <source src="https://www.youtube.com/watch?v=NQxEUC3-aaE&pp=0gcJCcMKAYcqIYzv" type="video/mp4">
               Your browser does not support the video tag.
             </video>
             <p>30-minute high-intensity interval training session perfect for building cardiovascular endurance and burning calories.</p>
@@ -519,7 +542,7 @@
           <div class="video-container">
             <h3>Flexibility & Recovery Sessions</h3>
             <video class="featured-video" width="500" height="315" controls>
-              <source src="../media/flexibility-recovery.mp4" type="video/mp4">
+              <source src="https://www.youtube.com/watch?v=zGIe_keQM_8" type="video/mp4">
               Your browser does not support the video tag.
             </video>
             <p>Stretching and recovery techniques to improve flexibility, reduce muscle soreness, and enhance overall performance.</p>
